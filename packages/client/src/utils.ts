@@ -63,15 +63,6 @@ export function docRect(el: Element): { x: number; y: number; w: number; h: numb
   };
 }
 
-/** Center of an element in document coordinates. */
-export function docCenter(el: Element): { x: number; y: number } {
-  const r = el.getBoundingClientRect();
-  return {
-    x: r.left + window.scrollX + r.width / 2,
-    y: r.top + window.scrollY + r.height / 2,
-  };
-}
-
 /** Center of a rect in viewport coordinates. */
 export function viewCenter(el: Element): { x: number; y: number } {
   const r = el.getBoundingClientRect();

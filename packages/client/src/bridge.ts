@@ -1,11 +1,11 @@
 /**
- * bridge.ts - WebSocket connection to MCP server.
+ * bridge.ts — WebSocket connection to MCP server.
  * Receives tasks, routes them to engine or picker, sends results back.
  */
 import type { LiveTask } from "./model.js";
-import { executeTask, dismissAllAgents } from "./engine.js";
+import { executeTask } from "./engine.js";
 import { startPicker } from "./picker.js";
-import { setConnectionState } from "./overlay.js";
+import { setStatus } from "./overlay.js";
 
 export interface BridgeOptions {
   token: string;
@@ -26,15 +26,12 @@ type ClientMessage =
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let opts: BridgeOptions | null = null;
-let focusListenersInstalled = false;
 
 export function connect(options: BridgeOptions): void {
   opts = options;
   connectWs();
 
-  if (!focusListenersInstalled) {
-    focusListenersInstalled = true;
-    // Tell the server this tab is now active whenever it's focused
+  if (typeof window !== "undefined") {
     window.addEventListener("focus", () => {
       send({ type: "hello", url: location.href, title: document.title });
     });
@@ -56,9 +53,9 @@ function connectWs(): void {
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    console.debug("[cursorweb] connected to MCP server");
+    console.log("[cursorweb] connected to MCP server");
     send({ type: "hello", url: location.href, title: document.title });
-    setConnectionState(true);
+    setStatus("Atlas — connected", "#7c3aed");
   };
 
   ws.onmessage = async (ev) => {
@@ -69,19 +66,19 @@ function connectWs(): void {
   };
 
   ws.onerror = () => {
-    // Keep silent to prevent polluting browser console / dev server terminal
+    console.warn("[cursorweb] WebSocket error");
   };
 
   ws.onclose = () => {
-    setConnectionState(false);
-    if (reconnectTimer) clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connectWs, 5000);
+    console.warn("[cursorweb] disconnected, retrying in 3s…");
+    setStatus("Atlas — reconnecting…", "#f59e0b");
+    reconnectTimer = setTimeout(connectWs, 3000);
   };
 }
 
 async function handleServerMessage(msg: ServerMessage): Promise<void> {
   if (msg.type === "cancel_all") {
-    dismissAllAgents();
+    // TODO: signal running task to abort
     return;
   }
 
@@ -104,28 +101,22 @@ async function handleServerMessage(msg: ServerMessage): Promise<void> {
       return;
     }
 
-    // All other tools: run concurrently through multi-agent engine
+    // All other tools: run through engine
     const task: LiveTask = {
       id: msg.id,
       tool: msg.tool as LiveTask["tool"],
       args: msg.args,
     };
 
-    executeTask(task).then((result) => {
-      send({
-        type: "result",
-        id: result.id,
-        ok: result.ok,
-        data: result.data,
-        error: result.error,
-      });
-    }).catch((err) => {
-      send({
-        type: "result",
-        id: msg.id,
-        ok: false,
-        error: String(err),
-      });
+    setStatus(`Atlas — ${humanize(msg.tool)}…`, "#7c3aed");
+
+    const result = await executeTask(task);
+    send({
+      type: "result",
+      id: result.id,
+      ok: result.ok,
+      data: result.data,
+      error: result.error,
     });
   }
 }
@@ -134,4 +125,8 @@ function send(msg: ClientMessage): void {
   if (ws?.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   }
+}
+
+function humanize(tool: string): string {
+  return tool.replace(/_/g, " ");
 }

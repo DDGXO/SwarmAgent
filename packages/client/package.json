@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsup src/index.ts --format iife --global-name CursorWeb --out-dir dist --minify",
+    "build": "tsup src/index.ts --format iife --global-name CursorWeb --out-dir dist",
     "dev": "tsup src/index.ts --format iife --global-name CursorWeb --out-dir dist --watch"
   },
   "devDependencies": {

@@ -5,7 +5,7 @@ let shadow: ShadowRoot | null = null;
 
 const STYLE = `
   .cw-highlight {
-    position: absolute;
+    position: fixed;
     pointer-events: none;
     z-index: 2147483646;
     outline: 2px solid var(--cw-color, #4f8ef7);
@@ -53,7 +53,7 @@ const STYLE = `
 
 export function initOverlay(): ShadowRoot {
   shadowHost = document.createElement("div");
-  shadowHost.style.cssText = "all: initial; position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; pointer-events: none; z-index: 2147483640;";
+  shadowHost.style.cssText = "all: initial; position: fixed; top: 0; left: 0; width: 0; height: 0; pointer-events: none; z-index: 2147483640;";
   document.documentElement.appendChild(shadowHost);
   shadow = shadowHost.attachShadow({ mode: "open" });
 
@@ -72,91 +72,43 @@ export function getShadow(): ShadowRoot {
 let highlightEl: HTMLElement | null = null;
 let statusEl: HTMLElement | null = null;
 let pickHintEl: HTMLElement | null = null;
-const agentHighlights = new Map<string, HTMLElement>();
-const agentStatuses = new Map<string, { text: string; color: string }>();
-let connectionState = { connected: false, text: "Connecting…" };
 
-export function setConnectionState(connected: boolean): void {
-  connectionState = connected
-    ? { connected: true, text: "Connected" }
-    : { connected: false, text: "Reconnecting…" };
-  renderStatuses();
-}
-
-export function showHighlight(rect: DOMRect | null, color = "#4f8ef7", agentName = "default"): void {
+export function showHighlight(rect: DOMRect | null, color = "#4f8ef7"): void {
   if (!shadow) return;
   if (!rect) {
-    hideHighlight(agentName);
+    if (highlightEl) highlightEl.style.opacity = "0";
     return;
   }
-  let el = agentHighlights.get(agentName);
-  if (!el) {
-    el = document.createElement("div");
-    el.className = "cw-highlight";
-    shadow.appendChild(el);
-    agentHighlights.set(agentName, el);
+  if (!highlightEl) {
+    highlightEl = document.createElement("div");
+    highlightEl.className = "cw-highlight";
+    shadow.appendChild(highlightEl);
   }
-  const docLeft = rect.left + window.scrollX;
-  const docTop = rect.top + window.scrollY;
-  el.style.setProperty("--cw-color", color);
-  el.style.cssText += `
-    left: ${docLeft}px; top: ${docTop}px;
+  highlightEl.style.setProperty("--cw-color", color);
+  highlightEl.style.cssText += `
+    left: ${rect.left}px; top: ${rect.top}px;
     width: ${rect.width}px; height: ${rect.height}px;
     opacity: 1;
   `;
 }
 
-export function hideHighlight(agentName = "default"): void {
-  const el = agentHighlights.get(agentName);
-  if (el) el.style.opacity = "0";
+export function hideHighlight(): void {
+  if (highlightEl) highlightEl.style.opacity = "0";
 }
 
-export function setStatus(text: string, color = "#a0a0b8", agentName = "default"): void {
+export function setStatus(text: string, color = "#a0a0b8"): void {
   if (!shadow) return;
   if (!statusEl) {
     statusEl = document.createElement("div");
     statusEl.className = "cw-status";
     shadow.appendChild(statusEl);
   }
-  agentStatuses.set(agentName, { text, color });
-  renderStatuses();
-}
-
-export function clearStatus(agentName?: string): void {
-  if (agentName) {
-    agentStatuses.delete(agentName);
-    renderStatuses();
-  } else {
-    agentStatuses.clear();
-    renderStatuses();
-  }
-}
-
-function renderStatuses(): void {
-  if (!shadow) return;
-  if (!statusEl) {
-    statusEl = document.createElement("div");
-    statusEl.className = "cw-status";
-    shadow.appendChild(statusEl);
-  }
-
-  const entries = Array.from(agentStatuses.entries()).filter(([_, val]) => val.text);
-  const dotColor = connectionState.connected ? "#10b981" : "#f59e0b";
-
-  let html = `<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:${dotColor};">
-    <span class="agent-dot" style="background:${dotColor};margin:0;"></span>
-    <span>${connectionState.text}</span>
-  </div>`;
-
-  if (entries.length > 0) {
-    html += `<div style="margin-top:6px;border-top:1px solid rgba(255,255,255,0.1);padding-top:4px;">` +
-      entries.slice(-4).map(([name, { text, color }]) => 
-        `<div style="margin: 2px 0; font-size: 11px; color: #cbd5e1;"><span class="agent-dot" style="background:${color};"></span><strong>${name}</strong>: ${text}</div>`
-      ).join("") + `</div>`;
-  }
-
-  statusEl.innerHTML = html;
+  statusEl.innerHTML = `<span class="agent-dot" style="background:${color}"></span>${text}`;
   statusEl.style.opacity = "1";
+}
+
+export function clearStatus(): void {
+  if (statusEl) statusEl.style.opacity = "0";
 }
 
 export function showPickHint(visible: boolean): void {

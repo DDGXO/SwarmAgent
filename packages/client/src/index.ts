@@ -15,6 +15,7 @@ document.head.appendChild(blink);
 
 export function init(options: BridgeOptions): void {
   initOverlay();
+  initAgent();
   connect(options);
 }
 

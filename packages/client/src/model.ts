@@ -15,8 +15,6 @@ export interface LiveTask {
   id: string;
   tool: TaskTool;
   args: Record<string, unknown>;
-  agentName?: string;
-  agentColor?: string;
 }
 
 export interface TaskResult {
@@ -45,5 +43,4 @@ export interface Agent {
   node: HTMLElement | null;
   labelNode: HTMLElement | null;
   caretNode: HTMLElement | null;
-  dismissTimer?: ReturnType<typeof setTimeout> | null;
 }

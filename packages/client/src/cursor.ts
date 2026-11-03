@@ -10,13 +10,12 @@ const CURSOR_SVG = `
 export function createAgentNode(agent: Agent, shadow: ShadowRoot): void {
   const wrap = document.createElement("div");
   wrap.style.cssText = `
-    position: absolute;
+    position: fixed;
     pointer-events: none;
     z-index: 2147483647;
     transform: translate(-2px, -2px);
     transition: opacity 0.2s;
     opacity: 0;
-    display: none;
     top: 0; left: 0;
     will-change: transform;
   `;
@@ -61,12 +60,6 @@ export async function moveTo(
   speed: number = 1
 ): Promise<void> {
   if (!agent.node) return;
-  if (agent.dismissTimer) {
-    clearTimeout(agent.dismissTimer);
-    agent.dismissTimer = null;
-  }
-  agent.node.style.display = "block";
-  agent.node.style.transition = "opacity 0.2s";
   agent.node.style.opacity = "1";
   agent.visible = true;
   agent.state = "moving";
@@ -74,7 +67,7 @@ export async function moveTo(
   const sx = agent.x;
   const sy = agent.y;
   const d = dist(sx, sy, tx, ty);
-  const durationMs = clamp(d / (1.2 * speed), 250, 650);
+  const durationMs = clamp(d / (0.8 * speed), 200, 700);
   const start = performance.now();
 
   while (true) {
@@ -87,19 +80,6 @@ export async function moveTo(
   }
 
   agent.state = "idle";
-}
-
-/** Fade out and hide cursor from screen */
-export function hideCursor(agent: Agent): void {
-  if (!agent.node) return;
-  agent.visible = false;
-  agent.node.style.transition = "opacity 0.4s ease-out";
-  agent.node.style.opacity = "0";
-  setTimeout(() => {
-    if (!agent.visible && agent.node) {
-      agent.node.style.display = "none";
-    }
-  }, 450);
 }
 
 function clamp(v: number, lo: number, hi: number): number {
