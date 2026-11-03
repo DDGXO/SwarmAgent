@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { exec } from "node:child_process";
 import { sendTask, sendPick, cancelAll, getSession } from "./bridge.js";
 import type { ToolResult } from "./types.js";
 import {
@@ -25,7 +26,13 @@ If you receive "No browser connected":
 - Open target web page in Chrome (e.g. http://localhost:3848/demo/plain.html)
 - Ensure the green '● Connected' badge appears in the top-right corner of the web page
 
-## 2. Multi-Agent & Parallel Swarm Execution
+## 2. Strict Rule: Zero Source Code Reading for DOM Discovery
+- DO NOT use \`read_file\`, \`grep\`, \`git grep\`, or terminal commands to search project source code to find selectors or text strings.
+- ALWAYS inspect and target elements directly through the live browser DOM using CursorWeb tools (\`get_page\`, \`get_element\`, \`await_pick\`).
+- If you are unsure of the selector, query semantic elements (e.g. \`h1\`, \`header\`, \`nav\`, \`main\`, \`section\`, \`button\`) via \`get_element\` or call \`await_pick\` so the user can click the element directly.
+- The live browser session is the single source of truth.
+
+## 3. Multi-Agent & Parallel Swarm Execution
 For UI redesigns and layout overhaul tasks:
 - Inspect page structure using \`get_page\` and \`get_element\`
 - Decompose the page into distinct visual zones:
@@ -38,7 +45,7 @@ For UI redesigns and layout overhaul tasks:
   * Option 1 (Single agent batch): Use \`swarm_execute\` tool with an array of tasks. All cursors spawn and execute simultaneously in the exact same millisecond.
   * Option 2 (Multi-agent delegation): Assign subagents with distinct \`agent_name\` parameters (e.g. 'Header Designer', 'Hero Styler', 'CTA Specialist'). Each agent receives a unique cursor color and name tag.
 
-## 3. Tool Reference
+## 4. Tool Reference
 - get_page: Return URL and title of the connected web page.
 - await_pick: Activate interactive element picker and wait for user click.
 - get_element: Fly cursor to element and return DOM details and computed styles.
@@ -100,6 +107,28 @@ export function registerTools(server: McpServer): void {
       const s = getSession();
       if (!s) return err("No browser connected.");
       return ok({ url: s.url, title: s.title });
+    }
+  );
+
+  // ---- open_page
+  server.tool(
+    "open_page",
+    "Open a target URL in the default browser. Use this to automatically open web pages for visual automation without requiring manual user actions.",
+    {
+      url: z.string().describe("URL of the web page to open (e.g. http://localhost:3000)."),
+    },
+    async ({ url }) => {
+      try {
+        const cmd = process.platform === "win32"
+          ? `start "" "${url}"`
+          : process.platform === "darwin"
+          ? `open "${url}"`
+          : `xdg-open "${url}"`;
+        exec(cmd);
+        return ok({ message: `Opened ${url} in browser. Extension connects automatically.` });
+      } catch (e) {
+        return err(String(e));
+      }
     }
   );
 

@@ -3,6 +3,11 @@
 ## Guidelines
 This project uses the SwarmAgent / CursorWeb MCP server for live visual browser automation with multi-agent cursor swarms.
 
+### Strict Rule: Zero Source Code Reading for DOM Discovery
+- NEVER read, grep, or search project source code to find DOM selectors or text strings.
+- ALWAYS inspect and target elements directly through the live browser DOM using CursorWeb tools (`get_page`, `get_element`, `await_pick`).
+- If unsure of the target selector, query semantic elements via `get_element` or invoke `await_pick` for direct user selection.
+
 ### Browser Connection
 - Always call `get_page` before executing DOM operations.
 - If the browser is not connected (`No browser connected`), instruct the user to load the unpacked extension from `packages/extension` at `chrome://extensions` and open the target web page.

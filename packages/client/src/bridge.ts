@@ -42,7 +42,7 @@ function connectWs(): void {
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    console.log("[cursorweb] connected to MCP server");
+    console.debug("[cursorweb] connected to MCP server");
     send({ type: "hello", url: location.href, title: document.title });
     setConnectionState(true);
   };
@@ -55,13 +55,13 @@ function connectWs(): void {
   };
 
   ws.onerror = () => {
-    console.warn("[cursorweb] WebSocket error");
+    // Keep silent to prevent polluting browser console / dev server terminal
   };
 
   ws.onclose = () => {
-    console.warn("[cursorweb] disconnected, retrying in 3s…");
     setConnectionState(false);
-    reconnectTimer = setTimeout(connectWs, 3000);
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connectWs, 5000);
   };
 }
 

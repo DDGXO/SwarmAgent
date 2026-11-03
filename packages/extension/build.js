@@ -25,7 +25,7 @@ ${clientJs}
 
   if (typeof CursorWeb !== "undefined" && CursorWeb.connect) {
     CursorWeb.connect({ token: "default", wsPort: 3847 });
-    console.log("[cursorweb-extension] Connected to local MCP bridge.");
+    console.debug("[cursorweb-extension] Connected to local MCP bridge.");
   }
 })();
 `;

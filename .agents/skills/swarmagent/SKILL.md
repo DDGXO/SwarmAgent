@@ -20,7 +20,13 @@ Guide the user through connecting the browser:
 - Open or reload the target web page in Chrome (e.g. \`http://localhost:3848/demo/plain.html\`)
 - Verify the green status indicator '● Connected' appears in the top-right corner
 
-## 2. Swarm Strategy & Subagent Delegation
+## 2. Strict Rule: Zero Source Code Reading for DOM Discovery
+- NEVER read, grep, or search project source code (\`read_file\`, \`git grep\`, \`ripgrep\`, terminal search) to find element selectors or text strings.
+- ALWAYS inspect and target elements directly through the live browser DOM using CursorWeb tools (\`get_page\`, \`get_element\`, \`await_pick\`).
+- If you need to find an element, query semantic selectors (e.g. \`h1\`, \`header\`, \`nav\`, \`main\`, \`section\`, \`button\`) via \`get_element\` or call \`await_pick\` so the user can click the element directly.
+- The live browser session is the single source of truth. Do not reverse-engineer DOM elements from source code.
+
+## 3. Swarm Strategy & Subagent Delegation
 For UI redesigns and layout overhaul tasks:
 - Inspect page structure using \`get_page\` or \`get_element\`
 - Decompose the page into independent visual zones:
@@ -34,7 +40,7 @@ For UI redesigns and layout overhaul tasks:
   * Or spawn subagents with distinct \`agent_name\` values for each tool call (e.g. "Agent 1", "Hero Styler", "Navbar Designer")
 - All visual DOM mutations are automatically persisted to the source HTML file on disk via Cheerio persistence.
 
-## 3. Tool Reference
+## 4. Tool Reference
 - \`get_page\`: Retrieve URL and title of the active connected web page
 - \`await_pick\`: Interactive element picker waiting for a user click
 - \`get_element\`: Read selector, bounding rect, and computed styles of an element
