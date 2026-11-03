@@ -1,5 +1,5 @@
 /**
- * bridge.ts — WebSocket connection to MCP server.
+ * bridge.ts - WebSocket connection to MCP server.
  * Receives tasks, routes them to engine or picker, sends results back.
  */
 import type { LiveTask } from "./model.js";
@@ -26,10 +26,24 @@ type ClientMessage =
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let opts: BridgeOptions | null = null;
+let focusListenersInstalled = false;
 
 export function connect(options: BridgeOptions): void {
   opts = options;
   connectWs();
+
+  if (!focusListenersInstalled) {
+    focusListenersInstalled = true;
+    // Tell the server this tab is now active whenever it's focused
+    window.addEventListener("focus", () => {
+      send({ type: "hello", url: location.href, title: document.title });
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        send({ type: "hello", url: location.href, title: document.title });
+      }
+    });
+  }
 }
 
 function connectWs(): void {
@@ -120,8 +134,4 @@ function send(msg: ClientMessage): void {
   if (ws?.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
   }
-}
-
-function humanize(tool: string): string {
-  return tool.replace(/_/g, " ");
 }

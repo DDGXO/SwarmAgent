@@ -2,10 +2,13 @@ import { WebSocketServer, WebSocket } from "ws";
 import { randomUUID } from "crypto";
 import type { ClientMessage, ResultMessage, PickedMessage, ServerMessage, Session } from "./types.js";
 
-const WS_PORT = 3847;
+const WS_PORT = parseInt(process.env.CURSORWEB_WS_PORT ?? "3847", 10);
 const TASK_TIMEOUT_MS = 30_000;
 
-let session: Session | null = null;
+// Multi-session: all connected tabs, keyed by WebSocket instance
+const sessions = new Map<WebSocket, Session>();
+// The "active" session — updated whenever a tab sends a hello (focus/load event)
+let activeSession: Session | null = null;
 let wss: WebSocketServer | null = null;
 
 export function startBridge(token: string): void {
@@ -16,7 +19,6 @@ export function startBridge(token: string): void {
   });
 
   wss.on("connection", (ws, req) => {
-    // Validate token via query param (allow 'default' or match)
     const url = new URL(req.url ?? "/", `http://127.0.0.1`);
     const reqToken = url.searchParams.get("token");
     if (token !== "default" && reqToken !== token) {
@@ -24,17 +26,17 @@ export function startBridge(token: string): void {
       return;
     }
 
-    if (session) {
-      session.ws.close(4000, "Replaced by new connection");
-    }
-
-    session = {
+    const sess: Session = {
       ws,
       url: "",
       title: "",
       token,
       tasks: new Map(),
     };
+
+    sessions.set(ws, sess);
+    // New tab becomes active until another one sends hello
+    activeSession = sess;
 
     ws.on("message", (raw) => {
       let msg: ClientMessage;
@@ -43,11 +45,17 @@ export function startBridge(token: string): void {
       } catch {
         return;
       }
-      handleClientMessage(msg);
+      handleClientMessage(sess, msg);
     });
 
     ws.on("close", () => {
-      if (session?.ws === ws) session = null;
+      sessions.delete(ws);
+      if (activeSession === sess) {
+        // Fallback to any remaining open session
+        activeSession = Array.from(sessions.values()).find(
+          (s) => s.ws.readyState === WebSocket.OPEN
+        ) ?? null;
+      }
     });
 
     ws.on("error", (err) => {
@@ -60,27 +68,27 @@ export function startBridge(token: string): void {
   console.error(`[bridge] WebSocket listening on ws://127.0.0.1:${WS_PORT}`);
 }
 
-function handleClientMessage(msg: ClientMessage): void {
-  if (!session) return;
-
+function handleClientMessage(sess: Session, msg: ClientMessage): void {
   if (msg.type === "hello") {
-    session.url = msg.url;
-    session.title = msg.title;
+    sess.url = msg.url;
+    sess.title = msg.title;
+    // The tab that sent hello is the visible/focused tab — make it active
+    activeSession = sess;
     console.error(`[bridge] hello from: ${msg.url}`);
     return;
   }
 
   if (msg.type === "picked") {
-    session.pickResolve?.(msg);
-    session.pickResolve = undefined;
+    sess.pickResolve?.(msg);
+    sess.pickResolve = undefined;
     return;
   }
 
   if (msg.type === "result") {
-    const pending = session.tasks.get(msg.id);
+    const pending = sess.tasks.get(msg.id);
     if (pending) {
       clearTimeout(pending.timeout);
-      session.tasks.delete(msg.id);
+      sess.tasks.delete(msg.id);
       pending.resolve(msg);
     }
     return;
@@ -93,44 +101,56 @@ function handleClientMessage(msg: ClientMessage): void {
 }
 
 export function getSession(): Session | null {
-  return session;
+  // Return active session if still open
+  if (activeSession?.ws.readyState === WebSocket.OPEN) return activeSession;
+  // Otherwise find any open session
+  const fallback = Array.from(sessions.values()).find(
+    (s) => s.ws.readyState === WebSocket.OPEN
+  ) ?? null;
+  activeSession = fallback;
+  return fallback;
 }
 
 /** Send a task to the browser and wait for result (max 30s). */
 export async function sendTask(tool: string, args: Record<string, unknown>): Promise<ResultMessage> {
-  if (!session) throw new Error("No browser connected. Open the target page with CursorWeb client injected.");
+  const sess = getSession();
+  if (!sess) throw new Error("No browser connected. Open the target page in Chrome with the SwarmAgent extension active.");
 
   const id = randomUUID();
   const msg: ServerMessage = { type: "task", id, tool, args };
 
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      session?.tasks.delete(id);
+      sess.tasks.delete(id);
       reject(new Error(`Task ${id} timed out after ${TASK_TIMEOUT_MS}ms`));
     }, TASK_TIMEOUT_MS);
 
-    session!.tasks.set(id, { resolve, timeout });
-    session!.ws.send(JSON.stringify(msg));
+    sess.tasks.set(id, { resolve, timeout });
+    sess.ws.send(JSON.stringify(msg));
   });
 }
 
 /** Ask browser to enter pick mode and wait for user click. */
 export async function sendPick(): Promise<PickedMessage> {
-  if (!session) throw new Error("No browser connected.");
+  const sess = getSession();
+  if (!sess) throw new Error("No browser connected.");
 
   const requestId = randomUUID();
   const msg: ServerMessage = { type: "task", id: requestId, tool: "await_pick", args: { requestId } };
 
   return new Promise((resolve) => {
-    session!.pickResolve = resolve;
-    session!.ws.send(JSON.stringify(msg));
+    sess.pickResolve = resolve;
+    sess.ws.send(JSON.stringify(msg));
   });
 }
 
 export function cancelAll(): void {
-  if (!session) return;
-  const msg: ServerMessage = { type: "cancel_all" };
-  session.ws.send(JSON.stringify(msg));
-  for (const { timeout } of session.tasks.values()) clearTimeout(timeout);
-  session.tasks.clear();
+  for (const sess of sessions.values()) {
+    try {
+      const msg: ServerMessage = { type: "cancel_all" };
+      sess.ws.send(JSON.stringify(msg));
+      for (const { timeout } of sess.tasks.values()) clearTimeout(timeout);
+      sess.tasks.clear();
+    } catch { /* ignore closed sockets */ }
+  }
 }

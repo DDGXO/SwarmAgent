@@ -1,9 +1,15 @@
 {
-  "name": "cursorweb",
-  "private": true,
+  "name": "swarmagent",
+  "version": "0.2.0",
+  "description": "Multi-agent visual browser automation and live DOM editing via MCP",
+  "private": false,
   "workspaces": ["packages/*"],
+  "bin": {
+    "swarmagent": "./packages/mcp-server/dist/index.js"
+  },
   "scripts": {
     "build": "npm run build --workspaces",
+    "postinstall": "npm run build",
     "dev:server": "npm run dev -w packages/mcp-server",
     "dev:client": "npm run dev -w packages/client"
   }
