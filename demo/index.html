@@ -1,0 +1,163 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CursorWeb Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0f14;
+      color: #e8e8f0;
+      min-height: 100vh;
+      padding: 60px 24px;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    header { margin-bottom: 48px; }
+
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 12px;
+      color: #f0f0fa;
+    }
+
+    .tagline {
+      font-size: 1.1rem;
+      color: #8080a0;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: #1a1a24;
+      border: 1px solid #2a2a38;
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #c0c0e0;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: #7070a0;
+      line-height: 1.7;
+    }
+
+    .price {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #a78bfa;
+      margin-top: 12px;
+    }
+
+    .cta {
+      display: inline-block;
+      background: #7c3aed;
+      color: white;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      margin-top: 32px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .feature {
+      background: #14141c;
+      border: 1px solid #2a2a38;
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+
+    .feature-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #c0c0e0;
+      margin-bottom: 4px;
+    }
+
+    .feature-desc {
+      font-size: 0.85rem;
+      color: #5a5a80;
+      line-height: 1.6;
+    }
+
+    footer {
+      margin-top: 64px;
+      font-size: 0.85rem;
+      color: #3a3a58;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1 id="main-heading" style="color: #f59e0b; font-size: 3rem; font-weight: 800; letter-spacing: -0.03em; text-shadow: 0 0 30px rgba(56, 189, 248, 0.45)">CYBERVAULT. Extreme Hardware.</h1>
+      <p class="tagline" id="tagline">Pusat perangkat keras performa ekstrem, workstation AI, dan komponen kustom dengan garansi resmi.</p>
+    </header>
+
+    <div class="card" id="hero-card" style="background: #1c1500; border-color: #f59e0b; box-shadow: 0 4px 30px rgba(245, 158, 11, 0.2)">
+      <h2 id="card-title">RTX 5090 Blackwell Liquid AI Edition</h2>
+      <p id="card-desc">VRAM 32GB GDDR7, arsitektur Blackwell kustom dengan closed-loop liquid cooling untuk beban training model lokal.</p>
+      <div class="price" id="price-tag" style="color: #ef4444; font-size: 1.8rem; font-weight: 900">Rp 39.500.000 (Flash Sale Hari Ini ⚡)</div>
+    </div>
+
+    <a href="#" class="cta" id="cta-button" style="background: #d97706; border-radius: 10px; box-shadow: 0 4px 25px rgba(245, 158, 11, 0.45); color: #ffffff; padding: 14px 34px">Beli Sekarang 🛒</a>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-title" id="feat-1-title">Custom Workstation Threadripper</div>
+        <div class="feature-desc" id="feat-1-desc">96-Core 192-Thread dengan dukungan RAM 512GB ECC DDR5.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-title" id="feat-2-title">Mechanical Optical Keyboards</div>
+        <div class="feature-desc" id="feat-2-desc">Switch hall-effect analog dengan rapid-trigger 0.1mm.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-title" id="feat-3-title">OLED Ultrawide 240Hz Display</div>
+        <div class="feature-desc" id="feat-3-desc">Panel QD-OLED 49 inch 5120x1440 response time 0.03ms.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-title" id="feat-4-title">Pengiriman Kilat &amp; Asuransi 100%</div>
+        <div class="feature-desc" id="feat-4-desc">Same-day delivery dengan packing kayu khusus dan garansi toko penuh.</div>
+      </div>
+    </div>
+
+    <footer>
+      <p id="footer-text" style="color: #fbbf24; letter-spacing: 0.04em">CYBERVAULT Official Store · Jakarta Pusat · Authorized Tech Partner &amp; 3 Years 1-to-1 Replacement</p>
+    </footer>
+  </div>
+
+  <script src="/client.js?v=4"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token") || "default";
+    const wsPort = parseInt(params.get("wsPort") ?? "3847", 10);
+
+    if (window.CursorWeb) {
+      window.CursorWeb.connect({ token, wsPort });
+    } else {
+      console.warn("[cursorweb] No CursorWeb global found.");
+    }
+  </script>
+
+
+</body></html>

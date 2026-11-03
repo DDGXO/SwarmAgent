@@ -1,0 +1,10 @@
+{
+  "name": "cursorweb",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev:server": "npm run dev -w packages/mcp-server",
+    "dev:client": "npm run dev -w packages/client"
+  }
+}

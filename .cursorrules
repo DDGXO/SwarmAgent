@@ -1,0 +1,13 @@
+# Cursor Rules for SwarmAgent
+
+## Guidelines
+This project uses the SwarmAgent / CursorWeb MCP server for live visual browser automation with multi-agent cursor swarms.
+
+### Browser Connection
+- Always call `get_page` before executing DOM operations.
+- If the browser is not connected (`No browser connected`), instruct the user to load the unpacked extension from `packages/extension` at `chrome://extensions` and open the target web page.
+
+### Multi-Agent Swarm Workflow
+- For redesign or layout overhaul tasks, decompose the task into independent UI zones (header, hero, cards, cta, footer).
+- Execute concurrently using `swarm_execute` or assign a descriptive `agent_name` to each tool invocation.
+- All visual DOM mutations (`edit_text`, `set_style`, `replace_element`, `insert_element`, `remove_element`) automatically persist to the source HTML file on disk.

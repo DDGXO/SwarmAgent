@@ -1,0 +1,14 @@
+{
+  "name": "@cursorweb/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup src/index.ts --format iife --global-name CursorWeb --out-dir dist --minify",
+    "dev": "tsup src/index.ts --format iife --global-name CursorWeb --out-dir dist --watch"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.0"
+  }
+}
