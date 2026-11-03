@@ -74,7 +74,7 @@ export async function moveTo(
   const sx = agent.x;
   const sy = agent.y;
   const d = dist(sx, sy, tx, ty);
-  const durationMs = clamp(d / (1.8 * speed), 100, 320);
+  const durationMs = clamp(d / (1.2 * speed), 250, 650);
   const start = performance.now();
 
   while (true) {

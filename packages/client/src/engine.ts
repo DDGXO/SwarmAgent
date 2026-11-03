@@ -148,6 +148,13 @@ async function handlePick(task: LiveTask): Promise<TaskResult> {
 async function flyTo(agent: Agent, selector: string): Promise<Element | null> {
   const el = document.querySelector(selector);
   if (!el) return null;
+
+  const rect = el.getBoundingClientRect();
+  if (rect.top < 60 || rect.bottom > window.innerHeight - 60) {
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    await sleep(400);
+  }
+
   const dc = docCenter(el);
   await moveTo(agent, dc.x, dc.y);
   showHighlight(el.getBoundingClientRect(), agent.color, agent.name);
@@ -324,7 +331,7 @@ async function animateBackspace(el: Element, text: string): Promise<void> {
   const chars = [...text];
   for (let i = chars.length; i >= 0; i--) {
     el.textContent = chars.slice(0, i).join("");
-    await sleep(4);
+    await sleep(15);
   }
 }
 
@@ -337,7 +344,7 @@ async function animateTyping(agent: Agent, el: Element, text: string): Promise<v
   for (let i = 0; i <= chars.length; i++) {
     el.textContent = chars.slice(0, i).join("");
     if (caret.parentElement !== el) el.appendChild(caret);
-    await sleep(8 + Math.random() * 8);
+    await sleep(25 + Math.random() * 15);
   }
   caret.remove();
 }
